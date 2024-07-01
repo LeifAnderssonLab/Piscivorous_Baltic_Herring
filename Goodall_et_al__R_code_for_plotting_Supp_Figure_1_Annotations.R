@@ -22,7 +22,7 @@ filtered_data_CHR10
 library(rtracklayer)
 
 # Read GTF file
-cluhar_v2.0.2_gtf <- import("/Users/jakgo991/Documents/Herring_Array/Genomic_raw_data/Clupea_harengus.Ch_v2.0.2.108.gtf")
+cluhar_v2.0.2_gtf <- import("/pathtodata/Clupea_harengus.Ch_v2.0.2.108.gtf")
 
 # Filter annotations for chromosome 10
 chr10_annotations <- subset(cluhar_v2.0.2_gtf, seqnames(cluhar_v2.0.2_gtf) == "10")
@@ -51,9 +51,6 @@ filtered_data_Chr_10_core <- filtered_data_CHR10[, c("CHR", "POS")]
 
 # Extract chromosome and position information from the filtered SNP data
 filtered_data_Chr_10_peak <- filtered_data_Chr_10_peak[, c("CHR", "POS")]
-
-
-
 
 #########
 # Convert snp_chr_pos and gtf_data into GRanges objects
@@ -89,7 +86,7 @@ Chr_10_peak_3_BM <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"
 Chr_10_peak_genes$gene_name <- Chr_10_peak_3_BM$external_gene_name[match(Chr_10_peak_genes$gene_id, Chr_10_peak_3_BM$ensembl_gene_id)]
 Chr_10_peak_gtf$gene_name <- Chr_10_peak_3_BM$external_gene_name[match(Chr_10_peak_gtf$gene_id, Chr_10_peak_3_BM$ensembl_gene_id)]
 
-write.table(Chr_10_peak_genes, "/Users/jakgo991/Documents/Herring_Array/Publications/SlatterSill_Manuscript/FIGURES/Supplement/SNPChip_Sign_Annotation/Chr10_Genomic_Ranges_Annotations.txt")
+write.table(Chr_10_peak_genes, "/pathtoexport/Chr10_Genomic_Ranges_Annotations.txt")
 
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
 
@@ -335,7 +332,7 @@ filtered_data_CHR15
 library(rtracklayer)
 
 # Read GTF file
-cluhar_v2.0.2_gtf <- import("/Users/jakgo991/Documents/Herring_Array/Genomic_raw_data/Clupea_harengus.Ch_v2.0.2.108.gtf")
+cluhar_v2.0.2_gtf <- import("/pathtodata/Clupea_harengus.Ch_v2.0.2.108.gtf")
 
 # Filter annotations for chromosome 15
 Chr_15_annotations <- subset(cluhar_v2.0.2_gtf, seqnames(cluhar_v2.0.2_gtf) == "15")
@@ -397,7 +394,7 @@ Chr_15_peak_3_BM <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"
 Chr_15_peak_genes$gene_name <- Chr_15_peak_3_BM$external_gene_name[match(Chr_15_peak_genes$gene_id, Chr_15_peak_3_BM$ensembl_gene_id)]
 Chr_15_peak_gtf$gene_name <- Chr_15_peak_3_BM$external_gene_name[match(Chr_15_peak_gtf$gene_id, Chr_15_peak_3_BM$ensembl_gene_id)]
 
-write.table(Chr_15_peak_genes, "/Users/jakgo991/Documents/Herring_Array/Publications/SlatterSill_Manuscript/FIGURES/Supplement/SNPChip_Sign_Annotation/Chr15_Genomic_Ranges_Annotations.txt")
+write.table(Chr_15_peak_genes, "/pathtoexport/Chr15_Genomic_Ranges_Annotations.txt")
 
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
 
@@ -644,7 +641,7 @@ filtered_data_CHR17
 library(rtracklayer)
 
 # Read GTF file
-cluhar_v2.0.2_gtf <- import("/Users/jakgo991/Documents/Herring_Array/Genomic_raw_data/Clupea_harengus.Ch_v2.0.2.108.gtf")
+cluhar_v2.0.2_gtf <- import("/pathtodata/Clupea_harengus.Ch_v2.0.2.108.gtf")
 
 # Filter annotations for chromosome 17
 chr17_annotations <- subset(cluhar_v2.0.2_gtf, seqnames(cluhar_v2.0.2_gtf) == "17")
@@ -706,7 +703,7 @@ Chr_17_peak_3_BM <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"
 Chr_17_peak_genes$gene_name <- Chr_17_peak_3_BM$external_gene_name[match(Chr_17_peak_genes$gene_id, Chr_17_peak_3_BM$ensembl_gene_id)]
 Chr_17_peak_gtf$gene_name <- Chr_17_peak_3_BM$external_gene_name[match(Chr_17_peak_gtf$gene_id, Chr_17_peak_3_BM$ensembl_gene_id)]
 
-write.table(Chr_17_peak_genes, "/Users/jakgo991/Documents/Herring_Array/Publications/SlatterSill_Manuscript/FIGURES/Supplement/SNPChip_Sign_Annotation/Chr17_Genomic_Ranges_Annotations.txt")
+write.table(Chr_17_peak_genes, "/pathtoexport/Chr17_Genomic_Ranges_Annotations.txt")
 
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
@@ -951,7 +948,7 @@ filtered_data_CHR19
 library(rtracklayer)
 
 # Read GTF file
-cluhar_v2.0.2_gtf <- import("/Users/jakgo991/Documents/Herring_Array/Genomic_raw_data/Clupea_harengus.Ch_v2.0.2.108.gtf")
+cluhar_v2.0.2_gtf <- import("/pathtodata/Clupea_harengus.Ch_v2.0.2.108.gtf")
 
 # Filter annotations for chromosome 19
 chr19_annotations <- subset(cluhar_v2.0.2_gtf, seqnames(cluhar_v2.0.2_gtf) == "19")
@@ -1014,7 +1011,7 @@ Chr_19_peak_3_BM <- getBM(attributes = c("external_gene_name", "ensembl_gene_id"
 Chr_19_peak_genes$gene_name <- Chr_19_peak_3_BM$external_gene_name[match(Chr_19_peak_genes$gene_id, Chr_19_peak_3_BM$ensembl_gene_id)]
 Chr_19_peak_gtf$gene_name <- Chr_19_peak_3_BM$external_gene_name[match(Chr_19_peak_gtf$gene_id, Chr_19_peak_3_BM$ensembl_gene_id)]
 
-write.table(Chr_19_peak_genes, "/Users/jakgo991/Documents/Herring_Array/Publications/SlatterSill_Manuscript/FIGURES/Supplement/SNPChip_Sign_Annotation/Chr19_Genomic_Ranges_Annotations.txt")
+write.table(Chr_19_peak_genes, "/pathtoexport/Chr19_Genomic_Ranges_Annotations.txt")
 
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
 #$#$#$#$#$#$#$#$#$#$#$#$#$##$
