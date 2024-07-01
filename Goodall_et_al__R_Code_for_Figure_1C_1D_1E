@@ -1,0 +1,473 @@
+#########################################
+# Figure 1C Script                     ##
+#########################################
+
+# Plot the age and growth data for the Slattersill samples
+
+# Import the dataset
+Age_Metadata <- read.delim2("/pathtodata/Age_Metadata.txt")
+
+# Load the required libraries
+library(ggplot2)
+library(dplyr)
+library(plotly)
+
+
+# Filter out samples with Prov_ID containing "BIAS" or "Hanobukten"
+filtered_data <- Age_Metadata %>%
+  filter(!grepl("BIAS|Hanöbukten", Prov_ID))
+
+filtered_data_2 <- filtered_data[ -c(25, 87) ,] # Remove outliers or those missing age data
+
+### BASE R version
+
+custom_colors <- c("black", "indianred3", "limegreen")
+filtered_data_2$Prov_ID <- as.factor(filtered_data_2$Prov_ID)
+pdf("/pathtoexport/1C_Age_Length_Figure.pdf", height = 5, width = 5)
+# Scatter plot with annotations and colored points for all data
+plot(filtered_data_2$Age, filtered_data_2$Total_Length,
+     xlab = paste0("Age (Years)"), ylab = paste0("Length (mm)"),
+     pch = 16,
+     bty = "l",
+     col = as.integer(as.factor(filtered_data_2$Prov_ID)))
+
+# Add legend with labels for original points in desired order
+legend("topright", legend = c("Autumn-spawning", "Spring-spawning","Slåttersill"), 
+       col = custom_colors, pch = 16,
+       box.lwd = 0, inset = c(0.02, 0.02)
+)
+
+# Add trendlines for each level
+for (level in levels(filtered_data_2$Prov_ID)) {
+  subset_data <- subset(filtered_data_2, Prov_ID == level)
+  model <- lm(Total_Length ~ Age, data = subset_data)
+  abline(model, col = custom_colors[which(levels(filtered_data_2$Prov_ID) == level)])
+}
+
+dev.off()
+
+
+#########################################
+# Figure 1D Script                     ##
+#########################################
+
+library(readr)
+library(ggplot2)
+
+# Read in RAW data 
+setwd("/pathtodata/Figure_1C/")
+RAW_PCA <- read_table("Merged_Gavlebukten_Slattersill_2023_2024_Sampling.eigenvec", col_names = FALSE)
+RAW_eigenval <- scan("Merged_Gavlebukten_Slattersill_2023_2024_Sampling.eigenval")
+
+# Read in some files for deriving metadata
+SLATTERSILL_SET_METADATA <- read.delim("FIG_1D_PCA_Metadata.txt")
+Inversion_InFull_vcf <- vcfR::read.vcfR("Merged_Gavlebukten_Slattersill_2023_2024_Sampling.vcf")
+Inversion_InFull_POS_Coordinated <- Inversion_InFull_vcf@fix[, c(3,1,2)]
+
+#Cleanup the dataset for analysis
+## remove nuisance column
+HAPLO_PCA <- RAW_PCA[,-1]
+## set names
+names(HAPLO_PCA)[1] <- "ind"
+names(HAPLO_PCA)[2:ncol(HAPLO_PCA)] <- paste0("PC", 1:(ncol(HAPLO_PCA)-1))
+
+# Merge in the Metadata so we can use it for plotting
+names(SLATTERSILL_SET_METADATA)[1] <- "ind"
+HAPLO_PCA <- merge(HAPLO_PCA, SLATTERSILL_SET_METADATA, by = "ind")
+HAPLO_PCA$FID <- as.factor(HAPLO_PCA$FID)
+
+# first convert to percentage variance explained
+pve <- data.frame(PC = 1:10, pve = RAW_eigenval/sum(RAW_eigenval)*100)
+
+# make plot
+a <- ggplot(pve, aes(PC, pve)) + geom_bar(stat = "identity")
+a + ylab("Percentage variance explained") + theme_light()
+
+# calculate the cumulative sum of the percentage variance explained
+cumsum(pve$pve)
+
+# Base R version
+# Define the desired order of levels
+desired_order <- c("Gävlebukten(Autumn)", "Gävlebukten(Spring)", "Slåttersill")
+
+# Set the base R color palette
+#palette("Dark2")
+
+# Reorder the levels of the FID factor variable
+HAPLO_PCA$FID <- factor(HAPLO_PCA$FID, levels = desired_order)
+
+# Adjust aspect ratio
+par(pty = "s")
+
+#Final graphic
+setwd("/pathtodata/Figure_1C/")
+
+pdf("Figure_1D.pdf")
+
+# Scatter plot with annotations and colored points for all data
+plot(-na.omit(HAPLO_PCA)$PC1, -na.omit(HAPLO_PCA)$PC2, 
+     xlab = paste0("PC1 (", signif(pve$pve[1], 3), "%)"),
+     ylab = paste0("PC2 (", signif(pve$pve[2], 3), "%)"),
+     main = NULL, pch = ifelse(HAPLO_PCA$Year == 2022, 16, 17), cex = 1.5, 
+     col = as.integer(as.factor(na.omit(HAPLO_PCA)$FID)))
+
+# Add legend with labels for original points in desired order
+legend("topright", legend = levels(na.omit(HAPLO_PCA)$FID), 
+       col = 1:length(unique(na.omit(HAPLO_PCA)$FID)), pch = 16,
+       box.lwd = 0, inset = c(0.02, 0.02))
+
+# Add legend with labels for "slattersill" subset shapes
+legend("bottomright", legend = levels(as.factor(HAPLO_PCA$Year)),, pch = c(1,2),
+       box.lwd = 0, inset = c(0.02, 0.02), col = "black")
+
+dev.off()
+
+# Create a variant figure with less borders
+setwd("/pathtoexport/")
+
+pdf("Figure_1D_v1.2.pdf")  # Set box.lwd to 0 to remove legend borders
+
+# Scatter plot with annotations and colored points for all data
+plot(-na.omit(HAPLO_PCA)$PC1, -na.omit(HAPLO_PCA)$PC2, 
+     xlab = paste0("PC1 (", signif(pve$pve[1], 3), "%)"),
+     ylab = paste0("PC2 (", signif(pve$pve[2], 3), "%)"),
+     main = NULL, pch = ifelse(HAPLO_PCA$Year == 2022, 16, 17), cex = 1.5, 
+     col = as.integer(as.factor(na.omit(HAPLO_PCA)$FID)),
+     bty = "n") # Remove plot border
+
+# Add border at bottom
+box(col = "black", lwd = 1, bty = "L")
+
+# Add legend with labels for original points in desired order
+legend("topright", legend = levels(na.omit(HAPLO_PCA)$FID), 
+       col = 1:length(unique(na.omit(HAPLO_PCA)$FID)), pch = 16,
+       box.lwd = 0, inset = c(0.02, 0.02), bg = "white", bty = "n")
+
+# Add legend with labels for "slattersill" subset shapes
+legend("bottomright", legend = levels(as.factor(HAPLO_PCA$Year)), pch = c(1,2),
+       box.lwd = 0, inset = c(0.02, 0.02), col = "black", bg = "white", bty = "n")
+
+dev.off()
+
+#########################################
+# Figure 1E Script                     ##
+#########################################
+
+# PCA Plots for Slattersill versus Spring Spawning Herring from Gavlebukten
+library(tidyverse)
+library(gridExtra)
+
+#########################
+
+# Now check the 2023 vs 2024 data
+setwd("/pathtoexport/")
+
+# Import various contrasts for comparison
+TempComp_Autumn <-  read.csv("Merged_Gavlebukten_Slattersill_2023_versus_Slattersill_2024_AUTUMN_COMPARISON.assoc.adjusted", sep="")
+TempComp_Spring <-  read.csv("Merged_Gavlebukten_Slattersill_2023_versus_Slattersill_2024_SPRING_COMPARISON.assoc.adjusted", sep="")
+TempComp_Slatter <-  read.csv("Merged_Gavlebukten_Slattersill_2023_versus_Slattersill_2024_SLATTER_COMPARISON.assoc.adjusted", sep="")
+
+
+# Import SNP Coordinates
+Inversion_InFull_vcf <- vcfR::read.vcfR("Merged_Gavlebukten_Slattersill_2023_2024_Sampling.vcf")
+Inversion_InFull_POS_Coordinated <- Inversion_InFull_vcf@fix[, c(3,2)]
+
+#########################
+
+# Update labels and join by common columns
+colnames(Inversion_InFull_POS_Coordinated) <- c("SNP", "POS")
+TempComp_Autumn_Annotated <- merge(TempComp_Autumn, Inversion_InFull_POS_Coordinated, by = "SNP")
+TempComp_Spring_Annotated <- merge(TempComp_Spring, Inversion_InFull_POS_Coordinated, by = "SNP")
+TempComp_Slatter_Annotated <- merge(TempComp_Slatter, Inversion_InFull_POS_Coordinated, by = "SNP")
+
+# Change the CHR to numeric
+TempComp_Autumn_Annotated$CHR <- as.numeric(TempComp_Autumn_Annotated$CHR)
+TempComp_Spring_Annotated$CHR <- as.numeric(TempComp_Spring_Annotated$CHR)
+TempComp_Slatter_Annotated$CHR <- as.numeric(TempComp_Slatter_Annotated$CHR)
+
+
+# Extract rows with CHR values between 1 and 26
+TempComp_Autumn_Subset <- subset(TempComp_Autumn_Annotated, CHR >= 1 & CHR <= 26)
+TempComp_Spring_Subset <- subset(TempComp_Spring_Annotated, CHR >= 1 & CHR <= 26)
+TempComp_Slatter_Subset <- subset(TempComp_Slatter_Annotated, CHR >= 1 & CHR <= 26)
+
+
+TempComp_Autumn_Subset$CHR <- as.numeric(TempComp_Autumn_Subset$CHR)
+TempComp_Autumn_Subset$POS <- as.numeric(TempComp_Autumn_Subset$POS)
+TempComp_Autumn_Subset$BONF <- as.numeric(TempComp_Autumn_Subset$BONF)
+
+TempComp_Spring_Subset$CHR <- as.numeric(TempComp_Spring_Subset$CHR)
+TempComp_Spring_Subset$POS <- as.numeric(TempComp_Spring_Subset$POS)
+TempComp_Spring_Subset$BONF <- as.numeric(TempComp_Spring_Subset$BONF)
+
+TempComp_Slatter_Subset$CHR <- as.numeric(TempComp_Slatter_Subset$CHR)
+TempComp_Slatter_Subset$POS <- as.numeric(TempComp_Slatter_Subset$POS)
+TempComp_Slatter_Subset$BONF <- as.numeric(TempComp_Slatter_Subset$BONF)
+
+# Sort data by chromosome and base pair position
+#Gavlebukten_vs_Slatt2023_AllSlatt2024_subset_data <- Gavlebukten_vs_Slatt2023_AllSlatt2024_subset_data %>%
+#  arrange(CHR, POS)
+
+TempComp_Autumn_Subset <- TempComp_Autumn_Subset %>% arrange(CHR, POS)
+TempComp_Spring_Subset <- TempComp_Spring_Subset %>% arrange(CHR, POS)
+TempComp_Slatter_Subset <- TempComp_Slatter_Subset %>% arrange(CHR, POS)
+
+# Deriving SNP that look like technical errors
+# Subset out what looks like temporal variants
+temporal_SNP_Autumn <- subset(TempComp_Autumn_Subset, BONF <= 0.05 ) # these are the temporal samples from plot D
+temporal_SNP_Spring <- subset(TempComp_Spring_Subset, BONF <= 0.05 ) # these are the temporal samples from plot D
+temporal_SNP_Slatter <- subset(TempComp_Slatter_Subset, BONF <= 0.05 ) # these are the temporal samples from plot D
+
+
+# Filter Gavlebukten_vs_Gav_AllSlatt2024_subset_data based on temporal_SNP
+TempComp_Autumn_Subset_Filter <- TempComp_Autumn_Subset[
+  TempComp_Autumn_Subset$CHR %in% temporal_SNP_Autumn$CHR &
+    TempComp_Autumn_Subset$POS %in% temporal_SNP_Autumn$POS, ]
+
+TempComp_Spring_Subset_Filter <- TempComp_Spring_Subset[
+  TempComp_Spring_Subset$CHR %in% temporal_SNP_Spring$CHR &
+    TempComp_Spring_Subset$POS %in% temporal_SNP_Spring$POS, ]
+
+TempComp_Slatter_Subset_Filter <- TempComp_Slatter_Subset[
+  TempComp_Slatter_Subset$CHR %in% temporal_SNP_Slatter$CHR &
+    TempComp_Slatter_Subset$POS %in% temporal_SNP_Slatter$POS, ]
+
+
+
+# Extract CHR and POS values from each temporal SNP dataset
+temporal_SNP_Autumn_common <- temporal_SNP_Autumn[, c("CHR", "POS", "BONF")]
+temporal_SNP_Spring_common <- temporal_SNP_Spring[, c("CHR", "POS", "BONF")]
+temporal_SNP_Slatter_common <- temporal_SNP_Slatter[, c("CHR", "POS", "BONF")]
+
+# Find common CHR and POS values across all datasets
+common_SNPs <- Reduce(intersect, list(
+  cbind(temporal_SNP_Autumn_common$CHR, temporal_SNP_Autumn_common$POS),
+  cbind(temporal_SNP_Spring_common$CHR, temporal_SNP_Spring_common$POS),
+  cbind(temporal_SNP_Slatter_common$CHR, temporal_SNP_Slatter_common$POS)
+))
+
+# Merge based on CHR and POS columns
+common_SNPs <- Reduce(function(x, y) merge(x, y, by = c("CHR", "POS")), 
+                      list(temporal_SNP_Autumn_common, 
+                           temporal_SNP_Spring_common, 
+                           temporal_SNP_Slatter_common))
+
+
+# Filter TempComp_Slatter_Subset_Filter based on common SNPs
+TempComp_Autumn_Subset_Filter_Common <- TempComp_Autumn_Subset_Filter[
+  TempComp_Autumn_Subset_Filter$CHR %in% common_SNPs$CHR &
+    TempComp_Autumn_Subset_Filter$POS %in% common_SNPs$POS, ]
+
+TempComp_Spring_Subset_Filter_Common <- TempComp_Spring_Subset_Filter[
+  TempComp_Spring_Subset_Filter$CHR %in% common_SNPs$CHR &
+    TempComp_Spring_Subset_Filter$POS %in% common_SNPs$POS, ]
+
+TempComp_Slatter_Subset_Filter_Common <- TempComp_Slatter_Subset_Filter[
+  TempComp_Slatter_Subset_Filter$CHR %in% common_SNPs$CHR &
+    TempComp_Slatter_Subset_Filter$POS %in% common_SNPs$POS, ]
+
+#########################
+
+## This part looks at which SNP would be removed/ flagged as temporal SNP
+
+# Set the working directory for the final figure
+setwd("/Users/jakgo991/Documents/Herring_Slattersill_Comparing_2023_2024_Sampling")
+
+# Import the dataset
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024 <- read.csv("Merged_Gavlebukten_Slattersill_2023_versus_Slattersill_2024_GAVLESPRING_SLATTER_COMPARISON.assoc.adjusted", sep="")
+
+# Import SNP Coordinates
+Inversion_InFull_vcf <- vcfR::read.vcfR("Merged_Gavlebukten_Slattersill_2023_2024_Sampling.vcf")
+Inversion_InFull_POS_Coordinated <- Inversion_InFull_vcf@fix[, c(3,2)]
+
+# Update labels and join by common columns
+colnames(Inversion_InFull_POS_Coordinated) <- c("SNP", "POS")
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024 <- merge(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024, Inversion_InFull_POS_Coordinated, by = "SNP")
+
+# Change the CHR to numeric
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024$CHR <- as.numeric(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024$CHR)
+
+# Extract rows with CHR values between 1 and 26
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data <- subset(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024, CHR >= 1 & CHR <= 26)
+
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$CHR <- as.numeric(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$CHR)
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$POS <- as.numeric(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$POS)
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$BONF <- as.numeric(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data$BONF)
+
+# Sort data by chromosome and base pair position
+GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data <- GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data %>%
+  arrange(CHR, POS)
+
+# Visualise the plots without the temporal SNP
+# Create Manhattan plot-like graph
+plot_FF <- ggplot(GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data, aes(x = POS, y = -log10(BONF))) +
+  geom_point(size = 0.5) +
+  ylim(-0.1, 80) +
+  geom_hline(yintercept = -log10(0.00000005), linetype = "dashed", color = "red") +
+  geom_hline(yintercept = -log10(0.00005), linetype = "dashed", color = "blue") +
+  labs(x = NULL, y = "-log10(BONF)",
+       title = "Gavlebukten(2023) vs Slattersill(2023 & 2024)") +
+  facet_wrap(~ CHR, scales = "free_x", ncol = 26) +
+  theme_light() +
+  theme(axis.text.x = element_blank()) +  # Remove the x-axis labels
+  geom_point(data = GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data, aes(x = POS, y = -log10(BONF)), color = "black", size = 0.5)  # Add filtered points in blue
+
+# View plot
+plot_FF
+
+#########################
+
+# Filter the temporal SNP from the dataset
+library(dplyr)
+
+filtered_data <- GavlebuktenSPRING_2022_2023_vs_Slatt_2023_2024_subset_data %>%
+  filter(!SNP %in% TempComp_Slatter_Subset_Filter_Common$SNP)
+
+# Visualise the plots without the temporal SNP
+# Create Manhattan plot-like graph
+plot_FF <- ggplot(filtered_data, aes(x = POS, y = -log10(BONF))) +
+  geom_point(size = 0.5) +
+  ylim(-0.1, 80) +
+  geom_hline(yintercept = -log10(0.00000005), linetype = "dashed", color = "red") +
+  geom_hline(yintercept = -log10(0.00005), linetype = "dashed", color = "blue") +
+  labs(x = NULL, y = "-log10(BONF)",
+       title = "Gavlebukten(2022 & 2023) vs Slattersill(2022 & 2023)") +
+  facet_wrap(~ CHR, scales = "free_x", ncol = 26) +
+  theme_light() +
+  theme(axis.text.x = element_blank()) +  # Remove the x-axis labels
+  geom_point(data = filtered_data, aes(x = POS, y = -log10(BONF)), color = "black", size = 0.5)  # Add filtered points in blue
+
+# View plot
+plot_FF
+
+#########################
+
+#CHROM Lengths
+# Define the data
+Chromosome_Lengths <- matrix(data = c(1:26,
+                                      33084258, 33010319, 32527562, 32267647, 31586861,
+                                      31461554, 30990621, 30729556, 30477381, 30227731,
+                                      30096327, 30022480, 29845739, 29332771, 28713521,
+                                      27773822, 27568510, 27247294, 27130643, 26694162,
+                                      26465981, 25664052, 25292897, 20091098, 14924191,
+                                      12443209),
+                             ncol = 2, byrow = FALSE)
+
+Chromosome_Lengths <- as.data.frame(Chromosome_Lengths)
+colnames(Chromosome_Lengths) <- c("CHR", "Length")
+
+library(dplyr)
+
+View(filtered_data)
+AllSNP_GWAS <- filtered_data
+
+
+# Group data by CHR and extract last row for each group
+last_positions <- AllSNP_GWAS %>%
+  group_by(CHR) %>%
+  slice(n()) %>%
+  ungroup()
+
+# Join with Chromosome_Lengths to get corresponding Length
+#last_positions <- left_join(last_positions, Chromosome_Lengths, by = c("CHR" = "CHROM"))
+last_positions <- left_join(last_positions, Chromosome_Lengths, by = "CHR")
+
+
+# Calculate padding
+last_positions <- last_positions %>%
+  mutate(padding = Length - POS)
+
+# Print the result
+print(last_positions)
+
+## The following plot has continuous x-axis for BP
+
+plot_BONF_values <- function(data, last_positions, output_file) {
+  # Initialize POS_adjusted column with 0
+  data$POS_adjusted <- 0
+  
+  # Loop through each row
+  for (i in 1:nrow(data)) {
+    # Calculate cumulative length of previous chromosomes' positions relative to CHR
+    cum_length <- sum(last_positions$Length[last_positions$CHR < data$CHR[i]])
+    
+    # Calculate POS_adjusted as POS + cumulative length
+    data$POS_adjusted[i] <- data$POS[i] + cum_length
+  }
+  
+  # Create a vector of colors alternating between black and grey based on CHR
+  colors <- ifelse(data$CHR %% 2 == 0, "gray", "black")
+  
+  # Calculate -log10 adjusted BONF values
+  bonf_adjusted <- -log10(data$BONF)
+  
+  # Plot the data
+  pdf(output_file, height = 5, width = 15)
+  plot(data$POS_adjusted, bonf_adjusted, col = colors, pch = 20,
+       xlab = "SNP Position (bp)", ylab = "-log10(BONF)", 
+       main = "")
+  
+  # Add a horizontal line for the trend line at y = 1.30103
+  abline(h = 1.30103, col = "red", lty = 2)
+  
+  # Close the PDF device
+  dev.off()
+}
+
+# Call the function to generate the plot and export to PDF
+plot_BONF_values(AllSNP_GWAS, last_positions, "BONF_plot.pdf")
+
+
+# TEST THE RE_LABEL so that its has CHROM values 1-26
+
+plot_BONF_values <- function(data, last_positions, output_file) {
+  # Initialize POS_adjusted column with 0
+  data$POS_adjusted <- 0
+  
+  # Loop through each row
+  for (i in 1:nrow(data)) {
+    # Calculate cumulative length of previous chromosomes' positions relative to CHR
+    cum_length <- sum(last_positions$Length[last_positions$CHR < data$CHR[i]])
+    
+    # Calculate POS_adjusted as POS + cumulative length
+    data$POS_adjusted[i] <- data$POS[i] + cum_length
+  }
+  
+  # Create a vector of colors alternating between black and grey based on CHR
+  colors <- ifelse(data$CHR %% 2 == 0, "gray", "black")
+  
+  # Calculate -log10 adjusted BONF values
+  bonf_adjusted <- -log10(data$BONF)
+  
+  # Plot the data
+  pdf(output_file, height = 5, width = 15)
+  plot(data$POS_adjusted, bonf_adjusted, col = colors, pch = 20,
+       xaxt = "n", xlab = "", ylab = "-log10(BONF)", main = "", bty = "n")
+  
+  # Add border at bottom
+  box(col = "black", lwd = 1, bty = "L")
+  
+  # Find positions where color changes occur
+  color_changes <- which(colors != lag(colors, default = colors[1]))
+  
+  # Calculate midpoints between color change positions
+  label_positions <- (data$POS_adjusted[c(color_changes[-1], length(data$POS_adjusted))] + data$POS_adjusted[color_changes]) / 2
+  
+  # Add x-axis labels with CHR values at midpoints
+  axis(1, at = label_positions, labels = data$CHR[color_changes], cex.axis = 1)
+  
+  # Add the first CHR label manually positioned in the middle of the first color block
+  first_color_block_midpoint <- (data$POS_adjusted[color_changes[1]] + data$POS_adjusted[1]) / 2
+  axis(1, at = first_color_block_midpoint, labels = data$CHR[1], cex.axis = 1)
+  
+  # Add a horizontal line for the trend line at y = 1.30103
+  abline(h = 1.30103, col = "red", lty = 2)
+  
+  # Close the PDF device
+  dev.off()
+}
+
+# Call the function to generate the plot and export to PDF
+plot_BONF_values(AllSNP_GWAS, last_positions, "BONF_plot_TEST.pdf")
+
+
