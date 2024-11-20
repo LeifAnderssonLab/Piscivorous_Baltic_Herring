@@ -148,3 +148,9 @@ for(CEL_col in Gav20_CEL_col){
   }
 }
 
+##bcftools commantds for renaming chromsosme ins SNP-chip vcf.
+#bcftools annotate -o ./Merged_Gavlebukten_Slattersill_2023_2024_Sampling_chr.vcf.gz --rename-chrs ./chr_rename_list.txt ./Merged_Gavlebukten_Slattersill_2023_2024_Sampling_rename_chr.vcf.gz 
+#bcftools view -i 'CHROM~"chr"' -o ./Merged_Gavlebukten_Slattersill_2023_2024_Sampling_chr_only.vcf.gz ./Merged_Gavlebukten_Slattersill_2023_2024_Sampling_chr.vcf.gz 
+#bcftools index --tbi ./Merged_Gavlebukten_Slattersill_2023_2024_Sampling_chr_only.vcf.gz 
+
+
